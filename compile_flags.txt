@@ -1,0 +1,2 @@
+-Iinclude
+-Wall -Wextra -Werror -std=c++17

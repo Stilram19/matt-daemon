@@ -1,0 +1,4 @@
+(*) fork: copy happens lazily, page by page, on write (COW).
+(*) Tintin_reporter: a singleton, thread-safe daemon logger that writes 
+timestamped log messages directly to a file descriptor using atomic write() calls 
+without dynamic memory allocation.
