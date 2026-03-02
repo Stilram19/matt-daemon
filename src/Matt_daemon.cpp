@@ -235,7 +235,7 @@ void Matt_daemon::eventLoop(void) {
         }
 
         // checking new connection requests
-        if (FD_ISSET(this->listenFd, &readfds) && this->clients.size() < MAX_CLIENTS) {
+        if (FD_ISSET(this->listenFd, &readfds)) {
             int clientFd = accept(this->listenFd, NULL, NULL);
 
             if (clientFd < 0) {
@@ -244,7 +244,9 @@ void Matt_daemon::eventLoop(void) {
                 }
             }
 
-            if (clientFd >= 0) {
+            if (this->clients.size() >= MAX_CLIENTS) {
+                close(clientFd);
+            } else if (clientFd >= 0) {
                 this->clients.emplace_back(clientFd);
             }
         }
