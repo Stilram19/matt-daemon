@@ -32,14 +32,16 @@ class Tintin_reporter {
 
     // helpers
     private:
-        void        logger(const char *msg, size_t len) const; // logs the message directly into the logFile
-        static const char  *getTimestamp(char *buff); // stores the timestamp in char *buff (thread-safe)
-        static const char  *getLogTypeStr(LogType type); // returns the corresponding string (ERROR, INGO, LOG) to the type (returns a char *literal)
+        void                logger(const char *msg, size_t len) const; // logs the message directly into the logFile
+        static void         getTimestamp(char *buff); // stores the timestamp in char *buff (thread-safe)
+        static const char   *getLogTypeStr(LogType type); // returns the corresponding string (ERROR, INGO, LOG) to the type (returns a char *literal)
+        static void         ensureDirExists(const char *path); // ensures the directory of the path exists (if it doesn't exists, it attemts to create it)
 
     // interface
     public:
+        int getLogFileFd(void) const; // returns the log file fd
         void log(LogType type, const char *msg) const; // logs a log
-        static Tintin_reporter &getLoggerInstance(const char *logFilePath);
+        static const Tintin_reporter &getLoggerInstance(const char *logFilePath);
 };
 
 #endif

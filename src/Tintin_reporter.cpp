@@ -5,15 +5,21 @@
 #include <cstring>
 #include <ctime>
 #include <fcntl.h>
+#include <stdexcept>
 #include <sys/select.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <libgen.h> 
 
 // (*) constructor & destructor
 Tintin_reporter::Tintin_reporter(const char *logFilePath) {
+    ensureDirExists(logFilePath);
+
     this->fd = open(logFilePath, O_WRONLY | O_CREAT | O_APPEND, 0644); // O_APPEND gives write atomicity (in multithreading)
 
     if (this->fd < 0) {
-        exit(EXIT_FAILURE);
+        printf("cannot open lock file!\n");
+        throw std::runtime_error("failure to open the log file"); 
     }
 }
 
@@ -23,7 +29,27 @@ Tintin_reporter::~Tintin_reporter() {
 
 // (*) private helpers
 
-const char *Tintin_reporter::getTimestamp(char *buff) {
+void Tintin_reporter::ensureDirExists(const char *path) {
+    char *pathCopy = strdup(path);
+    const char *dir = dirname(pathCopy);
+
+    struct stat st;
+    if (stat(dir, &st) != 0) {
+        if (mkdir(dir, 0755) != 0 && errno != EEXIST) {
+            printf("cannot create directory '%s': %s\n", dir, strerror(errno));
+            free(pathCopy);
+            throw std::runtime_error("failed to create log directory");
+        }
+    } else if (!S_ISDIR(st.st_mode)) {
+        printf("path exists but is not a directory: %s\n", dir);
+        free(pathCopy);
+        throw std::runtime_error("invalid log directory");
+    }
+
+    free(pathCopy);
+}
+
+void Tintin_reporter::getTimestamp(char *buff) {
     time_t t;
     struct tm tmp;
 
@@ -31,8 +57,6 @@ const char *Tintin_reporter::getTimestamp(char *buff) {
     localtime_r(&t, &tmp);
 
     strftime(buff, TIMESTAMP_MAX_LEN, TIMESTAMP_FORMAT, &tmp); // guarantees buffer null termination if size > 0
-
-    return buff;
 }
 
 void Tintin_reporter::logger(const char *log, size_t len) const {
@@ -66,10 +90,14 @@ const char  *Tintin_reporter::getLogTypeStr(LogType type) {
 
 // (*) public interface
 
-Tintin_reporter &Tintin_reporter::getLoggerInstance(const char *logFilePath) {
-    static Tintin_reporter logger(logFilePath);
+const Tintin_reporter &Tintin_reporter::getLoggerInstance(const char *logFilePath) {
+    try {
+        static Tintin_reporter logger(logFilePath);
 
-    return (logger);
+        return (logger);
+    } catch (std::runtime_error &e) {
+        exit(EXIT_FAILURE);
+    }
 }
 
 void Tintin_reporter::log(LogType type, const char *msg) const {
@@ -87,4 +115,8 @@ void Tintin_reporter::log(LogType type, const char *msg) const {
     size_t finalLen = ((size_t)written >= LOG_MAX_LEN) ? LOG_MAX_LEN - 1 : (size_t)written; 
 
     this->logger(log, finalLen);
+}
+
+int Tintin_reporter::getLogFileFd(void) const {
+    return (this->fd);
 }
