@@ -41,3 +41,7 @@
 *.dwo
 
 Matt_daemon
+_OUT
+.vscode
+Ben_AFK
+obj

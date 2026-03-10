@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <sys/file.h>
 
+
 std::atomic<int> Matt_daemon::receivedSignal = 0;
 std::atomic<int> Matt_daemon::quitRequested = 0;
 
